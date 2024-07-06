@@ -196,10 +196,13 @@ class TranscriptDataset:
         for idx, chunk in enumerate(chunks):
             inp = requests.get(url)
             if not inp.status_code == 200:
-                if inp.status_code != 404:
+                if inp.status_code not in [400, 404]:
                     raise Exception(f"Status code is {inp.status_code}, reason is: {inp.json()}")
                 else:
-                    print(f"Video {video_id} not found. Returning empty list")
+                    if inp.status_code == 404:
+                        print(f"Video {video_id} not found. Returning empty list")
+                    elif inp.status_code == 400:
+                        print(f"Video {video_id} has bad request. Returning empty list")
                     return []
             try:
                 resp = inp.json()
