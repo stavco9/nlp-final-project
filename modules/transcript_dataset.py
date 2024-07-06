@@ -89,7 +89,7 @@ class TranscriptDataset:
 
         chunks = self.get_chunks_list(min(MAX_API_COUNT, videos_count), YOUTUBE_VIDEOS_CHUNK)
 
-        first_url = base_search_url+ f'key={self.api_key}&type=video&part=snippet,id&order=relevance&relevanceLanguage={self.language}&regionCode={self.country_code}&videoDuration=medium&maxResults={min(MAX_API_COUNT, self.videos_count)}'
+        first_url = base_search_url+ f'key={self.api_key}&type=video&part=snippet,id&order=relevance&relevanceLanguage={self.language}&regionCode={self.country_code}&videoDuration=medium&maxResults={min(MAX_API_COUNT, videos_count)}'
         url = first_url
 
         for idx, chunk in enumerate(chunks):
