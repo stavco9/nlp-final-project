@@ -14,12 +14,17 @@ YOUTUBE_COMMENTS_CHUNK=100
 class Video:
     def __init__(self, video_id, video_obj):
         base_video_url = 'https://www.youtube.com/watch?v='
-        dur = isodate.parse_duration(video_obj['contentDetails']['duration'])
+        if video_obj['contentDetails'].get('duration'):
+            dur = isodate.parse_duration(video_obj['contentDetails']['duration'])
+        else:
+            dur = None
+
         statistics = video_obj['statistics']
         try:
             video_with_dislikes = ryd_getvideoinfo(video_id)
         except Exception as e:
             video_with_dislikes = {}
+
         self.video_formatted = {
             'id': video_id,
             'videoLink': base_video_url + video_id,
@@ -27,7 +32,7 @@ class Video:
             'description': video_obj['snippet']['description'],
             'channelId': video_obj['snippet']['channelId'],
             'channelTitle': video_obj['snippet']['channelTitle'],
-            'durationSeconds': int(dur.total_seconds()),
+            'durationSeconds': int(dur.total_seconds()) if dur is not None else 0,
             'publishedDate': video_obj['snippet']['publishedAt'],
             'likeCount': int(statistics['likeCount']) if statistics.get('likeCount') else 0,
             'dislikeCount': video_with_dislikes.get('dislikes') or 0,
@@ -145,10 +150,13 @@ class TranscriptDataset:
             video_list = YouTubeTranscriptApi.get_transcript(video_id, languages=[self.language])
             self.videos[video_id]['transcript'] = video_list
         except TranscriptsDisabled as e:
-            # We do not include videos without a transcript
+            #print(f"Transcript is disabled for {video_id}. Dropping {video_id} from list...")
             self.videos.pop(video_id)
         except NoTranscriptFound as e:
-            # We do not include videos without a transcript
+            #print(f"Transcript does not exist for {video_id} in language {self.language}. Dropping {video_id} from list...")
+            self.videos.pop(video_id)
+        except Exception as e:
+            print(f"General error {e}. Dropping {video_id} from list...")
             self.videos.pop(video_id)
 
     def build_comments(self, dataset_folder, comments_count=100):
