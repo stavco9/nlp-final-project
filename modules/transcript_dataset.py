@@ -74,22 +74,22 @@ class TranscriptDataset:
         print(f"There are currnet {len(self.all_video_ids)} videos in {file_counter} files")
         if videos_count > len(self.all_video_ids):
             print(f"Fetching now {videos_count - len(self.all_video_ids)}")
-            while file_counter*min(MAX_API_COUNT, videos_count) < videos_count or len(self.videos) > 0:
+            while len(self.all_video_ids) < videos_count or len(self.videos) > 0:
                 print(f"{counter+1} time - Fecthing videos")
-                self.get_videos_in_channel(counter, videos_count)
+                self.get_videos_in_channel(counter, videos_count, dataset_folder, file_counter)
                 counter+=1
                 if len(self.videos) >= min(MAX_API_COUNT, videos_count):
-                    print(f"Reached {len(self.videos)} videos. Saving...")
-                    self.all_video_ids.extend(list(self.videos.keys()))
+                    file_to_save = os.path.join(dataset_folder, f"dataset_{file_counter}.json")
+                    print(f"Reached {len(self.videos)} videos. Saving them into {file_to_save}")
                     if not os.path.exists(dataset_folder):
                         os.makedirs(dataset_folder)
-                    self.save(os.path.join(dataset_folder, f"dataset_{file_counter}.json"))
+                    self.save(file_to_save)
                     self.videos = {}
                     file_counter +=1
         else:
             print(f"There are already at least {len(self.all_video_ids)}. No need to do anything")
 
-    def get_videos_in_channel(self, counter, videos_count):
+    def get_videos_in_channel(self, counter, videos_count, dataset_folder, file_counter):
         base_search_url = 'https://www.googleapis.com/youtube/v3/search?'
 
         chunks = self.get_chunks_list(min(MAX_API_COUNT, videos_count), YOUTUBE_VIDEOS_CHUNK)
@@ -101,6 +101,12 @@ class TranscriptDataset:
             print(f"{counter+1} time -> {idx+1} chunk out of {len(chunks)}")
             inp = requests.get(url)
             if not inp.status_code == 200:
+                temp_path = os.path.join(dataset_folder, 'temp')
+                file_to_save = os.path.join(temp_path, f"dataset_{file_counter}_temp.json")
+                print(f"An exception has been occoured. Dumping {len(self.videos)} videos into {file_to_save}")
+                if not os.path.exists(temp_path):
+                    os.makedirs(temp_path)
+                self.save(file_to_save)
                 raise Exception(f"Status code is {inp.status_code}, reason is: {inp.json()}")
             try:
                 resp = inp.json()
@@ -112,7 +118,7 @@ class TranscriptDataset:
                     video_id = video['id']['videoId']
                     list_ids.append(video_id)
                     count+=1
-                self.get_videos_by_ids(list_ids, videos_count)
+                self.get_videos_by_ids(list_ids, videos_count, dataset_folder, file_counter)
 
                 print(f"{counter+1} time -> Total number of videos: {len(self.videos)}")
 
@@ -124,13 +130,18 @@ class TranscriptDataset:
             except requests.JSONDecodeError as e:
                 raise Exception(f"Resonse output is not json: {e}")
     
-    def get_videos_by_ids(self, video_ids, videos_count):
+    def get_videos_by_ids(self, video_ids, videos_count, dataset_folder, file_counter):
         base_videos_url = 'https://www.googleapis.com/youtube/v3/videos?'
         url = base_videos_url+'key={}&id={}&part=snippet,id,contentDetails,statistics'.format(self.api_key, ','.join(video_ids))
         inp = requests.get(url)
         if not inp.status_code == 200:
-            raise Exception(f"Status code is {inp.status_code}, reason is: {inp.json()}")
-            
+            temp_path = os.path.join(dataset_folder, 'temp')
+            file_to_save = os.path.join(temp_path, f"dataset_{file_counter}_temp.json")
+            print(f"An exception has been occoured. Dumping {len(self.videos)} videos into {file_to_save}")
+            if not os.path.exists(temp_path):
+                os.makedirs(temp_path)
+            self.save(file_to_save)
+            raise Exception(f"Status code is {inp.status_code}, reason is: {inp.json()}")   
         try:
             resp = inp.json()
 
@@ -138,9 +149,10 @@ class TranscriptDataset:
                 video_id = video['id']
                 if not video_id in self.all_video_ids:
                     self.videos[video_id] = Video(video_id, video).video_formatted
+                    self.all_video_ids.append(video_id)
                     self.download_transcript(video_id)
 
-                    if (len(self.videos) == min(MAX_API_COUNT, videos_count)):
+                    if (len(self.videos) == min(MAX_API_COUNT, videos_count - len(self.all_video_ids))):
                         break
         except requests.JSONDecodeError as e:
             raise Exception(f"Resonse output is not json: {e}")
@@ -153,7 +165,7 @@ class TranscriptDataset:
             #print(f"Transcript is disabled for {video_id}. Dropping {video_id} from list...")
             self.videos.pop(video_id)
         except NoTranscriptFound as e:
-            #print(f"Transcript does not exist for {video_id} in language {self.language}. Dropping {video_id} from list...")
+            print(f"Transcript does not exist for {video_id} in language {self.language}. Dropping {video_id} from list...")
             self.videos.pop(video_id)
         except Exception as e:
             print(f"General error {e}. Dropping {video_id} from list...")
