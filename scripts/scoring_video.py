@@ -1,17 +1,12 @@
 import numpy as np
-from scripts.video_info import Video_info
+from video_info import Video_info
 
-class Video_score:
-    def __init__(self, id, score):
-        self.video = id
-        self.score = score
-
-def compute_mean_variation(videos : Video_info):
-    watches = np.array([vid.watches for vid in videos])
-    likes = np.array([vid.likes for vid in videos]) / watches
-    dislikes = np.array([vid.dislikes for vid in videos]) / watches
-    num_comments = np.array([len(vid.comments) for vid in videos]) / watches
-    avg_comment_scores = np.array([np.mean(vid.comment_scores) if vid.comment_scores else 0 for vid in videos]) / watches
+def compute_mean_variation(videos : list):
+    views = np.array([vid.views for vid in videos], dtype=int)
+    likes = np.array([vid.likes for vid in videos], dtype=int) / views
+    dislikes = np.array([vid.dislikes for vid in videos], dtype=int) / views
+    num_comments = np.array([len(vid.comments) for vid in videos], dtype=int) / views
+    avg_comment_scores = np.array([np.mean(vid.comments_scores_classical) if vid.comments_scores_classical else 0 for vid in videos], dtype=float) / views
 
     means = {
         'likes': np.mean(likes),
@@ -30,14 +25,14 @@ def compute_mean_variation(videos : Video_info):
     return means, variations
 
 def score_objects(videos, means, variations):
-    video_scores = []
+    all_scores = []
     
     for vid in videos:
-        watch = vid.watches
-        rel_likes = vid.likes / watch
-        rel_dislikes = vid.dislikes / watch
-        rel_num_comments = len(vid.comments) / watch
-        rel_avg_comment_scores = np.mean(vid.comment_scores) / watch if vid.comment_scores else 0
+        views = vid.views
+        rel_likes = vid.likes / views
+        rel_dislikes = vid.dislikes / views
+        rel_num_comments = len(vid.comments) / views
+        rel_avg_comment_scores = np.mean(vid.comments_scores_classical) / views if vid.comments_scores_classical else 0
 
         z_scores = {
             'likes': (rel_likes - means['likes']) / variations['likes'] if variations['likes'] != 0 else 0,
@@ -46,15 +41,22 @@ def score_objects(videos, means, variations):
             'avg_comment_scores': (rel_avg_comment_scores - means['avg_comment_scores']) / variations['avg_comment_scores'] if variations['avg_comment_scores'] != 0 else 0
         }
 
-        mod_z_scores = {k: abs(v) + 1 for k, v in z_scores.items()}
+        modified_z_scores = {k: abs(v) + 1 for k, v in z_scores.items()}
 
-        score = mod_z_scores['likes'] * mod_z_scores['dislikes'] * mod_z_scores['num_comments'] * mod_z_scores['avg_comment_scores']
-        video_scores.append(Video_score(vid.id, score))
+        score = modified_z_scores['likes'] * modified_z_scores['dislikes'] + modified_z_scores['num_comments'] * modified_z_scores['avg_comment_scores']
+        all_scores.append(score)
 
     # min max normalization
-    min_score = min([score.score for score in video_scores])
-    max_score = max([score.score for score in video_scores])
-    for score in video_scores:
-        video_scores.score = (score.score - min_score) / (max_score - min_score) * 10
+    min_score = min(all_scores)
+    max_score = max(all_scores)
+    for i, score in enumerate(all_scores):
+        all_scores[i] = (score - min_score) / (max_score - min_score) * 10
 
-    return video_scores
+    return all_scores
+
+def adjust_disagreement_rating(videos):
+    means, variations = compute_mean_variation(videos)
+    all_scores = score_objects(videos, means, variations)
+    for video in videos:
+        video.comments_controversy_classical = all_scores.pop(0)
+    return videos
