@@ -159,6 +159,7 @@ class TranscriptDataset:
 
     def download_transcript(self, video_id):
         try:
+            #language_with_country = f"{self.language}-{self.country_code if self.country_code != 'uk' else 'gb'}"
             video_list = YouTubeTranscriptApi.get_transcript(video_id, languages=[self.language])
             self.videos[video_id]['transcript'] = video_list
         except TranscriptsDisabled as e:

@@ -1,5 +1,5 @@
 import numpy as np
-from video_info import Video_info
+from modules.sentiment_analysis.video_info import Video_info
 
 def compute_mean_variation(videos : list):
     views = np.array([vid.views for vid in videos], dtype=int)
