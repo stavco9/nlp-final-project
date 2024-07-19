@@ -37,7 +37,7 @@ class AZSC_LanguageModel(nn.Module):
             device=config.device,
             max_length=config.max_length
         ) for config in configs]
-        self.fc_out = nn.Linear(configs[-1].max_length * configs[-1].trg_vocab_size, 1)
+        self.fc_out = nn.Linear(configs[-1].max_length * configs[-1].embed_size, 1)
         self.tanh = nn.Tanh()
 
     def forward(self, src):
