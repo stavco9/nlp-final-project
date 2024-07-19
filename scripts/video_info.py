@@ -23,7 +23,7 @@ class Video_info:
         self.commentsCount = commentsCount
         self.comments = comments
         self.comments_scores_classical = []
-        self.comments_controversy_classical = 0
+        self.comments_controversy_classical = []
         self.comments_controversy_GPT = 0
 
     def add_comments_scores(self, sentiment_model, model_name, client=None):
@@ -32,19 +32,27 @@ class Video_info:
         else:
             self.comments_scores_classical = sentiment_model(self.comments)
 
-def json_to_video_info(json_file):
+def json_to_video_info(json_file, to_print=False):
     videos = []
     json_dict = json.load(json_file)
+    too_little_views = 0
+    too_little_comments = 0
     for video_key in json_dict:
         video_obj = json_dict[video_key]
+        views = int(video_obj['viewCount'])
+        if views <= 10000:
+            too_little_views += 1
+            continue
         id = video_obj['id']
-        views = video_obj['viewCount']
-        likeCount = video_obj['likeCount']
-        dislikeCount = video_obj['dislikeCount']
+        likeCount = int(video_obj['likeCount'])
+        dislikeCount = int(video_obj['dislikeCount'])
+        commentsCount = int(video_obj['commentCount'])
+        if commentsCount <= 10:
+            too_little_comments += 1
+            continue
         transcript = ""
         for t in video_obj['transcript']:
             transcript += " " + t['text']
-        commentsCount = video_obj['commentCount']
         comments = []
         for comment in video_obj['comments']:
             comments.append(comment['text'])
@@ -52,20 +60,24 @@ def json_to_video_info(json_file):
             comments = random.sample(comments, COMMENT_LIMIT)
         vid_inf = Video_info(id, views, likeCount, dislikeCount, transcript, commentsCount, comments)
         videos.append(vid_inf)
+    if to_print:
+        print(f"Videos with too little views: {too_little_views}")
+        print(f"Videos with too little comments: {too_little_comments}")
     return videos
 
-def datumToObj(datasets_json_files, pickle_file):
+def datumToObj(datasets_json_files, pickle_file, to_print=False):
     videos = []
     # if pickle file exists, load from pickle
     try:
         with open(pickle_file, 'rb') as f:
             videos = pickle.load(f)
+            return videos
     except FileNotFoundError:
         pass
     # load from json files
     for file in datasets_json_files:
         with open(file) as json_file:
-            videos.extend(json_to_video_info(json_file))
+            videos.extend(json_to_video_info(json_file, to_print))
     # save to pickle
     if len(datasets_json_files) > 0:
         with open(pickle_file, 'wb') as f:

@@ -29,6 +29,9 @@ def score_objects(videos, means, variations):
     
     for vid in videos:
         views = vid.views
+        # views must be at least 10000, otherwise raise an error
+        if views < 10000:
+            raise ValueError("Views must be at least 10000")
         rel_likes = vid.likes / views
         rel_dislikes = vid.dislikes / views
         rel_num_comments = len(vid.comments) / views
@@ -50,7 +53,7 @@ def score_objects(videos, means, variations):
     min_score = min(all_scores)
     max_score = max(all_scores)
     for i, score in enumerate(all_scores):
-        all_scores[i] = (score - min_score) / (max_score - min_score) * 10
+        all_scores[i] = ((score - min_score) / (max_score - min_score)) * 10
 
     return all_scores
 

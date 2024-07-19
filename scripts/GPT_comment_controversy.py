@@ -6,7 +6,6 @@ import re
 
 
 def init_openai():
-    client
     organization = os.getenv("OPENAI_ORGANIZATION")
     PROJECT_ID = os.getenv("OPENAI_ADIR_STAV_PROJECT")
     project_auth_token = os.getenv("OPENAI_PROJECT_AUTH")
