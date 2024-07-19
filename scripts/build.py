@@ -1,11 +1,11 @@
-from comments_sentiment_analysis import multi_sentiment_score
-from video_info import Video_info
-from video_info import datumToObj
-from video_info import save_to_json
-from video_info import save_to_pickle
-from GPT_comment_controversy import init_openai
-from GPT_comment_controversy import get_disagreement_rating
-from scoring_video import adjust_disagreement_rating
+from modules.sentiment_analysis.comments_sentiment_analysis import multi_sentiment_score
+from modules.sentiment_analysis.video_info import Video_info
+from modules.sentiment_analysis.video_info import datumToObj
+from modules.sentiment_analysis.video_info import save_to_json
+from modules.sentiment_analysis.video_info import save_to_pickle
+from modules.sentiment_analysis.GPT_comment_controversy import init_openai
+from modules.sentiment_analysis.GPT_comment_controversy import get_disagreement_rating
+from modules.sentiment_analysis.scoring_video import adjust_disagreement_rating
 import json
 
 def main():
