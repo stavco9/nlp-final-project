@@ -1,11 +1,8 @@
 
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import json
 from ..azsclm.board import Board
-from ..azsclm.azsclm import AZSC_LanguageModel
-from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 
 
@@ -31,40 +28,24 @@ class Train:
         self.dataloader = dataloader
         self.board = Board(self, print_level)
 
-    def json_to_dataset(self, json_file):
-        transcripts = []
-        scores = []
-
-        json_data = json.load(open(json_file))
-
-        for i in range(len(json_data)):
-            transcripts.append(json_data[i]['transcript'])
-            scores.append(json_data[i][self.data_name])
-
-        self.train_data = DataLoader(transcripts, scores)
-
     def train(self):
-
-        optimizer = optim.Adam(self.model.parameters(), lr=3e-4)
-        criterion = nn.MSELoss() 
-        # Example data loader (replace with your own data loading logic)
-        # Assuming hypothetical functions get_dataloader() that returns data_loader
-
+        size = len(self.dataloader.dataset)
+        num_batches = len(self.dataloader)
         for epoch in range(self.num_epochs):
             epoch_loss = 0
             total_loss = 0
             for batch_idx, (src, trg) in enumerate(self.dataloader):
                 src, trg = src.to(self.device), trg.to(self.device)
                 self.model.train()
-                output = self.model(src, trg)
+                output = self.model(src)
 
                 # Assuming trg contains the ground truth for the numerical result
                 target = self.dataloader[1].to(self.device)
 
-                optimizer.zero_grad()
-                loss = criterion(output, target)
+                self.optimizer.zero_grad()
+                loss = self.criterion(output, target)
                 loss.backward()
-                optimizer.step()
+                self.optimizer.step()
 
                 total_loss += loss.item()
 

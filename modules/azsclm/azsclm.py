@@ -40,10 +40,10 @@ class AZSC_LanguageModel(nn.Module):
         self.fc_out = nn.Linear(configs[-1].max_length * configs[-1].trg_vocab_size, 1)
         self.tanh = nn.Tanh()
 
-    def forward(self, src, trg):
+    def forward(self, src):
         out = self.tokenizer(src)["input_ids"]
         for transformer in self.transformers:
-            out = transformer(out, trg)
+            out = transformer.encoder(out).reshape(out.shape[0], -1)
         out = out.reshape(out.shape[0], -1)
         out = self.fc_out(out)
         out = self.tanh(out)
