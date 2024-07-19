@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from modules.azsc_transformer import Azsc_Transformer
+from modules.azsclm.azsc_transformer import Azsc_Transformer
 
 class Config_part:
     def __init__(self):
