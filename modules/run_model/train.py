@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import json
-from ..azsclm.board import Board
+from modules.azsclm.board import Board
 from torch.utils.data import DataLoader
 
 
