@@ -5,4 +5,5 @@ torch==2.2.1
 transformers==4.42.3
 openai==1.35.14
 requests
+torchviz
 isodate
