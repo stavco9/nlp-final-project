@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from azsc_transformer import Azsc_Transformer
+from modules.azsclm.azsc_transformer import Azsc_Transformer
 
 class Config_part:
     def __init__(self):
@@ -15,11 +15,11 @@ class Config_part:
         self.max_length = 100
 
 class AZSC_LanguageModel(nn.Module):
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer, text_length):
         super(AZSC_LanguageModel, self).__init__()
 
         config_one = Config_part()
-        config_one.max_length = 8192
+        config_one.max_length = text_length
         config_one.num_layers = 2
         config_two = Config_part()
         config_two.num_layers = 6
@@ -37,11 +37,11 @@ class AZSC_LanguageModel(nn.Module):
             device=config.device,
             max_length=config.max_length
         ) for config in configs]
-        self.fc_out = nn.Linear(configs[-1].max_length * configs[-1].trg_vocab_size, 1)
+        self.fc_out = nn.Linear(configs[-1].max_length, 1)
         self.tanh = nn.Tanh()
 
     def forward(self, src):
-        out = self.tokenizer(src)["input_ids"]
+        out = src
         for transformer in self.transformers:
             out = transformer.encoder(out).reshape(out.shape[0], -1)
         out = out.reshape(out.shape[0], -1)

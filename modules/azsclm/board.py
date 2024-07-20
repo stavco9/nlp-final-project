@@ -2,11 +2,12 @@ import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 # Create a SummaryWriter object
+log_dir = "data/runs/tensorboard_visualization"
 
 class Board:
     def __init__(self, info, print_level=0):
         self.print_level = print_level # 0 - strictly necessary prints, 1 - important prints, 2 - prints, 3 - debug print
-        self.writer = SummaryWriter('data/runs/tensorboard_visualization')
+        self.writer = SummaryWriter(log_dir)
         self.epoch = 0
 
     def info_handler(self, loss, batch, lenX, size, epoch_loss, name, losses = None):
