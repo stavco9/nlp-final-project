@@ -23,5 +23,8 @@ class Board:
         self.writer.add_scalar(name + ' epoch loss: ', epoch_loss, self.epoch * size + batch)
         return epoch_loss
 
+    def add_graph(self, model, input):
+        self.writer.add_graph(model, input)
+
     def close(self):
         self.writer.close()
