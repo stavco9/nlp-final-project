@@ -17,7 +17,7 @@ class Config_train:
 
 
 class Train:
-    def __init__(self, config, data_name = 'classical', print_level = 0):
+    def __init__(self, config, data_name = 'GPT'):
         self.num_epochs = config.num_epochs
         self.train_data = config.train_data
         self.device = config.device
@@ -26,29 +26,25 @@ class Train:
         self.criterion = config.criterion
         self.data_name = 'comments_controversy_' + data_name
         self.dataloader = config.train_data
-        self.board = Board(self, print_level)
+        self.board = Board()
 
     def train(self):
         size = len(self.dataloader.dataset)
         num_batches = len(self.dataloader)
+        self.model.train()
         for epoch in range(self.num_epochs):
             print(f"Epoch {epoch+1}\n-------------------------------")
             epoch_loss = 0
             for batch_idx, (src, trg) in enumerate(self.dataloader):
                 src, trg = src.to(self.device), trg.to(self.device)
-                self.model.train()
                 output = self.model(src)
 
-                # Assuming trg contains the ground truth for the numerical result
-                target = self.dataloader[1].to(self.device)
-
                 self.optimizer.zero_grad()
-                loss = self.criterion(output, target)
+                loss = self.criterion(output, trg)
                 loss.backward()
+                curr_loss = loss.item()
                 self.optimizer.step()
 
-                total_loss += loss.item()
-
-            avg_loss = total_loss / len(self.dataloader)
+            epoch_loss = self.board.info_handler(loss=curr_loss, batch=batch_idx, size=size, epoch_loss=epoch_loss, name='(training)' + self.data_name)
+            avg_loss = epoch_loss / num_batches
             print(f"Average loss: {avg_loss}")
-            epoch_loss = self.board.info_handler(loss=loss.item(), batch=batch_idx, lenX=len(self.dataloader), size=len(self.dataloader), epoch_loss=epoch_loss, name=self.data_name)

@@ -12,24 +12,32 @@ def run():
     tokenizer_name = 'distilbert-base-uncased-finetuned-sst-2-english'
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
 
-    datasets = Datasets("data/data/vids_sentiment.json", tokenizer, text_length)
+    datasets = Datasets("data/data/vids_sentiment.json", tokenizer, text_length, ratios=[0.8, 0.1, 0.1], batch_size=32, device="cuda")
 
     # Instantiate the model
     model = AZSC_LanguageModel(tokenizer, text_length).to("cuda")
 
     # Instantiate the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=3e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.1)
 
     # Instantiate the loss function
     criterion = nn.MSELoss()
 
-    traind_data = datasets.train_loader1
-    config = Config_train(num_epochs=10, train_data=traind_data, model=model, optimizer=optimizer, criterion=criterion, device="cuda")
-    
+    # the gpt model
+#    traind_data = datasets.train_loader1
+#    config = Config_train(num_epochs=150, train_data=traind_data, model=model, optimizer=optimizer, criterion=criterion, device="cuda")
     # Instantiate the Train object
-    trainer = Train(config, data_name='classical', print_level=0)
+#    trainer = Train(config, data_name='GPT')
+
+    # the bert model
+    traind_data = datasets.train_loader2
+    config = Config_train(num_epochs=200, train_data=traind_data, model=model, optimizer=optimizer, criterion=criterion, device="cuda")
+    # Instantiate the Train object
+    trainer = Train(config, data_name='classical')
+    
 
     # Start training
     trainer.train()
 
 run()
+#python3 -m modules.run_model.run
