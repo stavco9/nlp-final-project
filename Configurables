@@ -1,0 +1,11 @@
+in run.py:
+    optimizer (type, learning rate, weight decay)
+    Datasets (ratios, batch sizes)
+    Config_train (num_epochs)
+
+in train.py:
+    clip_grad_norm_ (max_norm)
+
+in azsclm.py:
+    Config_transformer
+    the fully connected layers after the transformers

@@ -25,12 +25,14 @@ class AZSC_LanguageModel(nn.Module):
         self.tokenizer = tokenizer
         self.transformers = Azsc_Transformer(config)
         fc_input_dim = text_length * config.embed_size
-        self.fc_out = nn.Linear(fc_input_dim, 1)
+        self.fc_out1 = nn.Linear(fc_input_dim, 10)
+        self.relu = nn.ReLU()
+        self.fc_out2 = nn.Linear(10, 1)
         self.tanh = nn.Tanh()
 
     def forward(self, src):
         out = self.transformers(src)
         out = out.reshape(out.shape[0], -1)
-        out = self.fc_out(out)
+        out = self.fc_out2(self.relu(self.fc_out1(out)))
         out = self.tanh(out)
         return out
