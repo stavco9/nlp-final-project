@@ -53,13 +53,13 @@ def score_objects(videos, means, variations):
     min_score = min(all_scores)
     max_score = max(all_scores)
     for i, score in enumerate(all_scores):
-        all_scores[i] = ((score - min_score) / (max_score - min_score)) * 10
+        all_scores[i] = ((score - min_score) / (max_score - min_score)) * 2 - 1
 
     return all_scores
 
 def adjust_disagreement_rating(videos):
     means, variations = compute_mean_variation(videos)
     all_scores = score_objects(videos, means, variations)
-    for video in videos:
-        video.comments_controversy_classical = all_scores.pop(0)
+    for i, video in enumerate(videos):
+        video.comments_controversy_classical = all_scores[i]
     return videos

@@ -6,31 +6,22 @@ model_name = 'distilbert-base-uncased-finetuned-sst-2-english'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name)
 
-# Function to get sentiment score
-def get_sentiment_score(text):
-    # Tokenize input text
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-
-    # Get model predictions
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits
-
-    # Apply softmax to get probabilities
-    probabilities = torch.nn.functional.softmax(logits, dim=-1)
-    
-    # Get positive and negative scores
-    negative_score = probabilities[0][0].item()
-    positive_score = probabilities[0][1].item()
-
-    # Calculate sentiment score on a scale from -10 to 10
-    sentiment_score = (positive_score - negative_score) * 10
-
-    return sentiment_score
-
 def multi_sentiment_score(texts):
     sentiment_scores = []
-    for text in texts:
-        sentiment_scores.append(get_sentiment_score(text))
+    if len(texts) == 0:
+        print("No texts to analyze")
+        return [0]
+    batch_size = min(64, len(texts))
+
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i + batch_size]
+        inputs = tokenizer(batch_texts, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+        probabilities = torch.nn.functional.softmax(logits, dim=-1)
+        batch_scores = (probabilities[:, 1] - probabilities[:, 0])
+        sentiment_scores.extend(batch_scores.tolist())
+
     return sentiment_scores
 

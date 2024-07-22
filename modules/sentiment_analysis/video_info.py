@@ -23,7 +23,7 @@ class Video_info:
         self.commentsCount = commentsCount
         self.comments = comments
         self.comments_scores_classical = []
-        self.comments_controversy_classical = []
+        self.comments_controversy_classical = 0
         self.comments_controversy_GPT = 0
 
     def add_comments_scores(self, sentiment_model, model_name, client=None):
@@ -47,7 +47,7 @@ def json_to_video_info(json_file, to_print=False):
         likeCount = int(video_obj['likeCount'])
         dislikeCount = int(video_obj['dislikeCount'])
         commentsCount = int(video_obj['commentCount'])
-        if commentsCount <= 10:
+        if commentsCount <= 10 or len(video_obj['comments']) <= 10:
             too_little_comments += 1
             continue
         transcript = ""
@@ -98,6 +98,7 @@ def save_to_json(videos, filename):
             'dislikes': vid.dislikes,
             'transcript': vid.transcript,
             'commentsCount': vid.commentsCount,
+            'comments_scores_classical': vid.comments_scores_classical,
             'comments_controversy_classical': vid.comments_controversy_classical,
             'comments_controversy_GPT': vid.comments_controversy_GPT
         }

@@ -42,7 +42,7 @@ class Train:
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, trg)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.5)
                 curr_loss = loss.item()
                 self.optimizer.step()
                 epoch_loss = self.board.info_handler(loss=curr_loss, batch=batch_idx, size=size, epoch_loss=epoch_loss, name='(training) ' + self.data_name)

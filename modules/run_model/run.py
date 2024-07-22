@@ -25,7 +25,7 @@ def run():
     model = AZSC_LanguageModel(tokenizer, text_length).to("cuda")
 
     # Instantiate the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-5, weight_decay=0.05)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.1)
 
     # Instantiate the loss function
     criterion = nn.MSELoss()
