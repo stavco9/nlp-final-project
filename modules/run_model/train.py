@@ -42,7 +42,7 @@ class Model:
         true = max(true, self.min_available)
         true = min(true, self.max_available)
 
-        acc = 1 - (abs(pred - true) * 100 / abs(max_item - min_item))
+        acc = 1 - (abs(pred - true) / abs(max_item - min_item))
         return float(acc)
 
     def train(self):
