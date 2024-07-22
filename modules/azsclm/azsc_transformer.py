@@ -3,23 +3,24 @@ import torch.nn as nn
 import math
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, embed_size, num_heads):
+    def __init__(self, embed_size, num_heads, device):
         super(MultiHeadAttention, self).__init__()
         self.embed_size = embed_size
         self.num_heads = num_heads
         self.head_dim = embed_size // num_heads
+        self.device = device
 
         assert (
-            self.head_dim * num_heads == embed_size
+            embed_size % num_heads == 0
         ), "Embedding size needs to be divisible by heads"
 
-        self.values = nn.Linear(self.head_dim, embed_size, bias=False)
-        self.keys = nn.Linear(self.head_dim, embed_size, bias=False)
-        self.queries = nn.Linear(self.head_dim, embed_size, bias=False)
-        self.fc_out = nn.Linear(embed_size, embed_size)
+        self.queries = nn.Linear(embed_size, embed_size, bias=False).to(self.device)
+        self.keys = nn.Linear(embed_size, embed_size, bias=False).to(self.device)
+        self.values = nn.Linear(embed_size, embed_size, bias=False).to(self.device)
+        self.fc_out = nn.Linear(embed_size, embed_size).to(self.device)
 
     def scaled_dot_product_attention(self, query, keys, values, mask=None):
-        attn_scores = torch.matmul(query, keys.transpose(-2, -1)) / math.sqrt(self.d_k)
+        attn_scores = torch.matmul(query, keys.transpose(-2, -1)) / math.sqrt(self.head_dim)
         if mask is not None:
             attn_scores = attn_scores.masked_fill(mask == 0, -1e9)
         attn_probs = torch.softmax(attn_scores, dim=-1)
@@ -28,11 +29,14 @@ class MultiHeadAttention(nn.Module):
     
     def split_heads(self, src):
         batch_size, seq_length, embed_size = src.size()
-        return src.view(batch_size, seq_length, self.heads, self.head_dim).transpose(1, 2)
+        out = src.view(batch_size, seq_length, self.num_heads, self.head_dim)
+        out = out.transpose(1, 2)
+        return out
     
     def combine_heads(self, src):
-        batch_size, _, seq_length, head_dim = src.size()
-        return src.transpose(1, 2).contiguous().view(batch_size, seq_length, self.embed_size)
+        batch_size, num_heads, seq_length, head_dim = src.size()
+        out = src.transpose(1, 2).contiguous().view(batch_size, seq_length, self.embed_size)
+        return out
 
     def forward(self, values, keys, query, mask=None):
         query = self.split_heads(self.queries(query))
@@ -71,89 +75,45 @@ class PositionalEncoding(nn.Module):
         return src + self.pe[:, :src.size(1)]
 
 class EncoderLayer(nn.Module):
-    def __init__(self, embed_size, num_heads, forward_expansion, dropout):
+    def __init__(self, config):
         super(EncoderLayer, self).__init__()
-        self.self_attn = MultiHeadAttention(embed_size, num_heads)
-        self.feed_forward = PositionWiseFeedForward(embed_size, forward_expansion)
-        self.norm1 = nn.LayerNorm(embed_size)
-        self.norm2 = nn.LayerNorm(embed_size)
-        self.dropout = nn.Dropout(dropout)
+        self.device = config.device
+        self.self_attn = MultiHeadAttention(config.embed_size, config.num_heads, config.device).to(self.device)
+        self.feed_forward = PositionWiseFeedForward(config.embed_size, config.forward_expansion).to(self.device)
+        self.norm1 = nn.LayerNorm(config.embed_size).to(self.device)
+        self.norm2 = nn.LayerNorm(config.embed_size).to(self.device)
+        self.dropout = nn.Dropout(config.dropout).to(self.device)
         
-    def forward(self, src, mask):
+    def forward(self, src, mask=None):
         attn_output = self.self_attn(src, src, src, mask)
         out = self.norm1(src + self.dropout(attn_output))
         ff_output = self.feed_forward(out)
         out = self.norm2(out + self.dropout(ff_output))
         return out
     
-class DecoderLayer(nn.Module):
-    def __init__(self, embed_size, num_heads, forward_expansion, dropout):
-        super(DecoderLayer, self).__init__()
-        self.self_attn = MultiHeadAttention(embed_size, num_heads)
-        self.cross_attn = MultiHeadAttention(embed_size, num_heads)
-        self.feed_forward = PositionWiseFeedForward(embed_size, forward_expansion)
-        self.norm1 = nn.LayerNorm(embed_size)
-        self.norm2 = nn.LayerNorm(embed_size)
-        self.norm3 = nn.LayerNorm(embed_size)
-        self.dropout = nn.Dropout(dropout)
-        
-    def forward(self, src, enc_output, src_mask, tgt_mask):
-        attn_output = self.self_attn(src, src, src, tgt_mask)
-        out = self.norm1(src + self.dropout(attn_output))
-        attn_output = self.cross_attn(out, enc_output, enc_output, src_mask)
-        out = self.norm2(out + self.dropout(attn_output))
-        ff_output = self.feed_forward(out)
-        out = self.norm3(out + self.dropout(ff_output))
-        return out
-
-class Azsc_Transformer(nn.Module):
+class Azsc_Transformers(nn.Module):
     def __init__(self, config):
-        super(Azsc_Transformer, self).__init__()
-        self.positional_encoding = PositionalEncoding(config.embed_size, config.max_length)
-        self.encoder_embedding = nn.Embedding(config.src_vocab_size, config.embed_size)
-        self.encoder_layers = nn.ModuleList([EncoderLayer(config.embed_size, config.num_heads, config.forward_expansion, config.dropout) for _ in range(config.num_layers)])
-        if config.tgt_vocab_size > 0:
-            self.decoder_embedding = nn.Embedding(config.tgt_vocab_size, config.embed_size)
-            self.decoder_layers = nn.ModuleList([DecoderLayer(config.embed_size, config.num_heads, config.forward_expansion, config.dropout) for _ in range(config.num_layers)])
-            self.fc = nn.Linear(config.embed_size, config.tgt_vocab_size)
-        self.dropout = nn.Dropout(config.dropout)
+        super(Azsc_Transformers, self).__init__()
+        self.device = config.device
+        self.positional_encoding = PositionalEncoding(config.embed_size, config.max_length).to(self.device)
+        self.encoder_embedding = nn.Embedding(config.src_vocab_size, config.embed_size).to(self.device)
+        self.encoder_layers = nn.ModuleList([EncoderLayer(config) for _ in range(config.num_layers)]).to(self.device)
+        self.dropout = nn.Dropout(config.dropout).to(self.device)
+        self.fc = nn.Linear(config.embed_size, config.tgt_size).to(self.device)
 
-    def generate_mask(self, src, tgt):
+    def generate_mask(self, src):
         src_mask = (src != 0).unsqueeze(1).unsqueeze(2)
-        if tgt is None:
-            return src_mask, None
-        tgt_mask = (tgt != 0).unsqueeze(1).unsqueeze(3)
-        seq_length = tgt.size(1)
-        nopeak_mask = (1 - torch.triu(torch.ones(1, seq_length, seq_length), diagonal=1)).bool()
-        tgt_mask = tgt_mask & nopeak_mask
-        return src_mask, tgt_mask
+        return src_mask
 
-    def forward(self, src, tgt=None):
-        device = src.device
-        self.positional_encoding.to(device)
-        self.encoder_embedding.to(device)
-        self.encoder_layers.to(device)
-        if tgt is not None:
-            self.decoder_embedding.to(device)
-            self.decoder_layers.to(device)
-            self.fc.to(device)
-        self.dropout.to(device)
+    def forward(self, src):
 
-        src_mask, tgt_mask = self.generate_mask(src, tgt)
-        src_embedded = self.dropout(self.positional_encoding(self.encoder_embedding(src)))
-        # it will be None, but just to make it more verstile
-        if tgt is None:
-            return src_embedded
-        
-        tgt_embedded = self.dropout(self.positional_encoding(self.decoder_embedding(tgt)))
-
-        enc_output = src_embedded
+        src_mask = self.generate_mask(src)
+        out = self.encoder_embedding(src)
+        out = self.positional_encoding(out)
+        out = self.dropout(out)
         for enc_layer in self.encoder_layers:
-            enc_output = enc_layer(enc_output, src_mask)
-
-        dec_output = tgt_embedded
-        for dec_layer in self.decoder_layers:
-            dec_output = dec_layer(dec_output, enc_output, src_mask, tgt_mask)
-
-        output = self.fc(dec_output)
-        return output
+            out = enc_layer(out, src_mask)
+        out = self.fc(out)
+        
+        return out
+        

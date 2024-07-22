@@ -7,7 +7,9 @@ import random
 def custom_collate_fn(batch):
     src, tgt = zip(*batch)
     src = torch.stack(src).long()  # Ensure src is Long
+    src = src.view(src.size(0), -1)
     tgt = torch.stack(tgt).float()  # Ensure tgt is Float
+    tgt = tgt.view(tgt.size(0), -1)
     return src, tgt
 
 class CustomDataset(Dataset):
@@ -32,7 +34,7 @@ def homogonize_token_length(text, tokenizer, text_length, device="cuda"):
     return tokenized_text
 
 class Datasets:
-    def __init__(self, json_file, tokenizer, text_length, ratios=[0.8, 0.1, 0.1], batch_size=32, device="cuda"):
+    def __init__(self, json_file, tokenizer, text_length, ratios=[0.8, 0.1, 0.1], batch_size=8, device="cuda"):
         self.json_file = json_file
         assert sum(ratios) == 1
         self.ratios = ratios

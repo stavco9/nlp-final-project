@@ -42,11 +42,11 @@ class Train:
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, trg)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.7)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1)
                 curr_loss = loss.item()
                 self.optimizer.step()
+                epoch_loss = self.board.info_handler(loss=curr_loss, batch=batch_idx, size=size, epoch_loss=epoch_loss, name='(training) ' + self.data_name)
 
-            epoch_loss = self.board.info_handler(loss=curr_loss, batch=batch_idx, size=size, epoch_loss=epoch_loss, name='(training) ' + self.data_name)
             avg_loss = epoch_loss / num_batches
             print(f"Average loss: {avg_loss}")
         # save the model
