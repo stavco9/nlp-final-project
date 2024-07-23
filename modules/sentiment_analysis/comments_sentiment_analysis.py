@@ -4,7 +4,9 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 # Load the pre-trained model and tokenizer
 model_name = 'distilbert-base-uncased-finetuned-sst-2-english'
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
+id2label = {0: "NEGATIVE", 1: "POSITIVE"}
+label2id = {"NEGATIVE": 0, "POSITIVE": 1}
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2, id2label=id2label, label2id=label2id)
 
 def multi_sentiment_score(texts):
     sentiment_scores = []
