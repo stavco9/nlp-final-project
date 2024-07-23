@@ -19,7 +19,7 @@ class CustomDataset(Dataset):
 
     def __len__(self):
         return len(self.texts)
-    
+
     def __getitem__(self, idx):
         src = self.texts[idx]
         trg = self.scores[idx]
@@ -34,7 +34,7 @@ def homogonize_token_length(text, tokenizer, text_length, device="cuda"):
     return tokenized_text
 
 class Datasets:
-    def __init__(self, json_file, tokenizer, text_length, ratios=[0.8, 0.1, 0.1], batch_size=8, device="cuda"):
+    def __init__(self, json_file, tokenizer, text_length, ratios=[0.8, 0.1, 0.1], batch_size=1, device="cuda"):
         self.json_file = json_file
         assert sum(ratios) == 1
         self.ratios = ratios
@@ -43,7 +43,7 @@ class Datasets:
         self.text_length = text_length
         self.device = device
         self.load_data()
-    
+
     def load_data(self):
         with open(self.json_file, 'r') as f:
             data = json.load(f)
@@ -85,4 +85,3 @@ class Datasets:
         self.train_loader2 = DataLoader(train_dataset2, batch_size=self.batch_size, shuffle=True, collate_fn=custom_collate_fn)
         self.val_loader2 = DataLoader(val_dataset2, batch_size=self.batch_size, shuffle=False, collate_fn=custom_collate_fn)
         self.test_loader2 = DataLoader(test_dataset2, batch_size=self.batch_size, shuffle=False, collate_fn=custom_collate_fn)
-        
