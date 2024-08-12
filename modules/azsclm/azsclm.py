@@ -3,7 +3,7 @@ import torch.nn as nn
 from modules.azsclm.azsc_transformer import Azsc_Transformers
 
 class Config_transformer:
-    def __init__(self, src_vocab_size=5000, tgt_size=500, src_pad_idx=0, trg_pad_idx=0, embed_size=128, num_layers=3, forward_expansion=256, num_heads=4, dropout=0.1, device="cuda", max_length=100):
+    def __init__(self, src_vocab_size=5000, tgt_size=500, src_pad_idx=0, trg_pad_idx=0, embed_size=256, num_layers=3, forward_expansion=1024, num_heads=4, dropout=0.1, device="cuda", max_length=100):
         self.src_vocab_size = src_vocab_size
         self.tgt_size = tgt_size
         self.src_pad_idx = src_pad_idx
@@ -28,9 +28,10 @@ class AZSC_LanguageModel(nn.Module):
         self.tanh = nn.Tanh()
 
     def forward(self, src):
+        # get a tensor of shape (batch_size, seq_length, tgt_size)
         out = self.transformers_chain(src)
-
-        out = out.mean(dim=1)
+        # get a tensor of shape (batch_size, tgt_size)
+        out = out.sum(dim=1)
         out = self.fc_out(out)
         out = self.tanh(out)
         return out

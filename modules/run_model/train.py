@@ -4,6 +4,7 @@ import torch.nn as nn
 import json
 from modules.azsclm.board import Board
 from torch.utils.data import DataLoader
+from torch.cuda.amp import GradScaler, autocast
 
 
 class Config_Model:
@@ -50,18 +51,32 @@ class Model:
         num_train_batches = len(self.train_data)
         num_valid_batches = len(self.valid_data)
         self.model.train()
+        #scaler = GradScaler()
         for epoch in range(self.num_epochs):
             print(f"Epoch {epoch+1}\n-------------------------------")
             epoch_loss = 0
 
             for batch_idx, (src, trg) in enumerate(self.train_data):
                 src, trg = src.to(self.device), trg.to(self.device)
+                ''' To run the model with mixed precision, uncomment the following lines and comment the lines after that.
+                I was still short on memory, so I had to comment the lines below.
+
+                with autocast():
+                    output = self.model(src)
+                    loss = self.criterion(output, trg)
+                scaler.scale(loss).backward()
+                # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.5)
+                self.optimizer.step()
+                scaler.step(self.optimizer)
+                scaler.update()
+                train_loss = loss.item()
+                '''
                 output = self.model(src)
 
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, trg)
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.5)
+                #torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.5)
                 train_loss = loss.item()
                 self.optimizer.step()
                 epoch_loss = self.board.info_handler(loss=train_loss, batch=batch_idx, size=size, epoch_loss=epoch_loss, name='(training) ' + self.data_name)
@@ -86,7 +101,7 @@ class Model:
                     running_valid_loss += valid_loss
                     total_acc += self.calculate_accuracy(max_item, min_item, output, trg)
                     avg_acc = total_acc / (batch_idx + 1)
-                    print(f"Accuracy: {avg_acc}")
+                #    print(f"Accuracy: {avg_acc}")
 
             avg_train_loss = epoch_loss / num_train_batches
             avg_valid_loss = running_valid_loss / num_valid_batches

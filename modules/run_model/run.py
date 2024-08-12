@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from modules.azsclm.azsclm import AZSC_LanguageModel
-from modules.run_model.train import Train, Config_train
+from modules.run_model.train import Model, Config_Model
 from modules.run_model.datasets import Datasets
 from transformers import AutoTokenizer
 import os
@@ -26,7 +26,7 @@ def run():
     model = AZSC_LanguageModel(tokenizer, text_length).to("cuda")
 
     # Instantiate the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-3, weight_decay=0.1)
+    optimizer = optim.Adam(model.parameters(), lr=1e-2, weight_decay=0.1)
 
     # Instantiate the loss function
     criterion = nn.MSELoss()
