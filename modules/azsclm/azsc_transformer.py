@@ -43,7 +43,7 @@ class MultiHeadAttention(nn.Module):
         keys = self.split_heads(self.keys(keys))
         values = self.split_heads(self.values(values))
 
-        out = self.scaled_dot_product_attention(query, keys, values, mask)
+        #out = self.scaled_dot_product_attention(query, keys, values, mask)
         out = self.fc_out(self.combine_heads(out))
 
         return out
