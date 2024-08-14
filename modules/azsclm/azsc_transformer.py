@@ -23,8 +23,8 @@ class MultiHeadAttention(nn.Module):
         attn_scores = torch.matmul(query, keys.transpose(-2, -1)) / math.sqrt(self.head_dim)
         if mask is not None:
             attn_scores = attn_scores.masked_fill(mask == 0, -1e9)
-        #attn_probs = torch.softmax(attn_scores, dim=-1)
-        output = torch.matmul(attn_scores, values)
+        attn_probs = torch.softmax(attn_scores, dim=-1)
+        output = torch.matmul(attn_probs, values)
         return output
     
     def split_heads(self, src):
