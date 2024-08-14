@@ -23,7 +23,7 @@ class MultiHeadAttention(nn.Module):
         attn_scores = torch.matmul(query, keys.transpose(-2, -1)) / math.sqrt(self.head_dim)
         if mask is not None:
             attn_scores = attn_scores.masked_fill(mask == 0, -1e9)
-        attn_probs = torch.softmax(attn_scores, dim=-1)
+        #attn_probs = torch.softmax(attn_scores, dim=-1)
         output = torch.matmul(attn_probs, values)
         return output
     
@@ -43,7 +43,7 @@ class MultiHeadAttention(nn.Module):
         keys = self.split_heads(self.keys(keys))
         values = self.split_heads(self.values(values))
 
-        #out = self.scaled_dot_product_attention(query, keys, values, mask)
+        out = self.scaled_dot_product_attention(query, keys, values, mask)
         out = self.fc_out(self.combine_heads(out))
 
         return out
