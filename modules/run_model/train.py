@@ -21,7 +21,7 @@ class Config_Model:
 
 
 class Model:
-    def __init__(self, config, data_name = 'GPT'):
+    def __init__(self, config, data_name = 'GPT', isLongformer = False):
         self.num_epochs = config.num_epochs
         self.train_data = config.train_data
         self.valid_data = config.valid_data
@@ -35,6 +35,7 @@ class Model:
         self.data_name = 'comments_controversy_' + data_name
         self.max_available = 1
         self.min_available = -1
+        self.isLongformer = isLongformer
         self.board = Board()
 
     def calculate_accuracy(self, min_item, max_item, pred, true):
@@ -72,6 +73,9 @@ class Model:
                 train_loss = loss.item()
                 '''
                 output = self.model(src)
+                if self.isLongformer:
+                    output = output.last_hidden_state
+                    #print("Output shape:", output.shape)
 
                 self.optimizer.zero_grad()
                 loss = self.criterion(output, trg)
@@ -96,6 +100,8 @@ class Model:
                 for batch_idx, (src, trg) in enumerate(self.valid_data):
                     src, trg = src.to(self.device), trg.to(self.device)
                     output = self.model(src)
+                    if self.isLongformer:
+                        output = output.last_hidden_state
                     loss = self.criterion(output, trg)
                     valid_loss = loss.item()
                     running_valid_loss += valid_loss
@@ -132,6 +138,8 @@ class Model:
             for batch_idx, (src, trg) in enumerate(self.test_data):
                 src, trg = src.to(self.device), trg.to(self.device)
                 pred = self.model(src)
+                if self.isLongformer:
+                    pred = pred.last_hidden_state
                 pred = pred.to(self.device)
                 loss = self.criterion(pred, trg)
                 #for section_name, section_loss in loss.last_losses.items():
