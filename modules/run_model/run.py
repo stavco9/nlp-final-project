@@ -81,5 +81,5 @@ def run(FromScratch = True, do_GPT = True, do_BERT = True):
         print(f'F1 Score: {f1}')
         torch.save(model.state_dict(), weights_path + 'classical.pth')
 
-run(True, False, True)
+run(True, True, True)
 #python3 -m modules.run_model.run
